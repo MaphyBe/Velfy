@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Velfy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;display:flex;justify-content:center;min-height:100vh;font-family:'DM Sans',sans-serif}
+input:focus,select:focus{outline:none;border-color:rgba(0,229,160,0.5)!important}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.6}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+
+.shell{
+  max-width:390px;width:100%;min-height:100vh;background:#0A0F1E;
+  display:flex;flex-direction:column;color:#fff;position:relative;overflow:hidden;
+}
+.glow-tr{position:fixed;top:-100px;right:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,160,0.07),transparent 70%);pointer-events:none;z-index:0}
+.glow-bl{position:fixed;bottom:-100px;left:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(79,195,247,0.05),transparent 70%);pointer-events:none;z-index:0}
+.screen{display:none;flex-direction:column;min-height:100vh;animation:fadeIn .3s ease}
+.screen.active{display:flex}
+
+/* TopBar */
+.topbar{display:flex;align-items:center;padding:16px 20px 12px;gap:12;z-index:1}
+.topbar-back{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:none;color:#fff;flex-shrink:0}
+.topbar-title{font-size:17px;font-weight:700;color:#fff}
+
+/* Buttons */
+.btn{width:100%;padding:15px 0;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer;border:none;background:linear-gradient(135deg,#00E5A0,#00B377);color:#0A0F1E;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn:disabled{background:rgba(255,255,255,0.07);color:#555;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid rgba(0,229,160,0.4);color:#00E5A0}
+.btn-sm{padding:11px 0;font-size:14px}
+
+/* Inputs */
+.lbl{font-size:12px;color:#888;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:-6px}
+.inp{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 14px;color:#fff;font-size:15px;width:100%;font-family:'DM Sans',sans-serif}
+.inp::placeholder{color:#444}
+.sel{background:#121929;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 14px;color:#fff;font-size:15px;width:100%;appearance:none;font-family:'DM Sans',sans-serif}
+
+/* Row */
+.row{display:flex;justify-content:space-between;margin-bottom:8px}
+.row-label{color:#888;font-size:13px}
+.row-val{color:#fff;font-size:13px}
+.row-val.accent{color:#00E5A0;font-weight:700}
+
+/* Dots */
+.dots{display:flex;gap:6px;justify-content:center;margin-top:16px}
+.dot{height:7px;border-radius:4px;background:rgba(255,255,255,0.2);transition:all .3s}
+.dot.active{width:20px;background:#00E5A0}
+.dot.inactive{width:7px}
+
+/* Progress bar */
+.progress-bar{display:flex;gap:4px;margin-bottom:24px;padding:8px 24px 0}
+.prog-seg{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.1);transition:background .3s}
+.prog-seg.done{background:#00E5A0}
+
+/* Currency dropdown */
+.curr-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#151D2E;border:1px solid rgba(255,255,255,0.12);border-radius:10px;z-index:99;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4);display:none}
+.curr-dropdown.open{display:block}
+.curr-item{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05)}
+.curr-item:hover{background:rgba(0,229,160,0.05)}
+.curr-item.selected{background:rgba(0,229,160,0.08)}
+
+/* Card preview */
+.card-preview{background:linear-gradient(135deg,#1A2940,#0D1F35);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;position:relative;overflow:hidden;min-height:100px}
+
+/* Notification dot */
+.notif-badge{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#FF5252;font-size:10px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Processing stages */
+.stage-item{display:flex;align-items:center;gap:10px;padding:8px 0;transition:opacity .4s}
+.stage-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:background .4s}
+
+/* Scroll container */
+.scroll{flex:1;overflow-y:auto}
+
+.gap14{display:flex;flex-direction:column;gap:14px}
+.section-title{font-size:12px;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="shell" id="app">
+  <div class="glow-tr"></div>
+  <div class="glow-bl"></div>
+
+  <!-- SPLASH -->
+  <div class="screen active" id="screen-splash" style="align-items:center;justify-content:center;gap:12px">
+    <div style="font-size:52px">⚡</div>
+    <div style="font-size:38px;font-weight:800;color:#00E5A0;letter-spacing:-1px;font-family:'Playfair Display',serif">Velfy</div>
+    <div style="font-size:11px;color:#aaa;letter-spacing:4px;text-transform:uppercase">Fast. Secure. Borderless.</div>
+    <div style="margin-top:28px;display:flex;gap:6px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#00E5A0;animation:pulse 1s infinite"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#00E5A0;opacity:.7;animation:pulse 1.3s infinite"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#00E5A0;opacity:.4;animation:pulse 1.6s infinite"></div>
+    </div>
+  </div>
+
+  <!-- ONBOARDING -->
+  <div class="screen" id="screen-onboarding" style="flex-direction:column">
+    <div style="flex:1;display:flex;flex-direction:column;padding:28px;justify-content:center">
+      <div id="ob-icon" style="font-size:72px;text-align:center;margin-bottom:24px">⚡</div>
+      <div id="ob-title" style="font-size:26px;font-weight:800;color:#fff;font-family:'Playfair Display',serif;text-align:center;line-height:1.2">Instant Settlement</div>
+      <div id="ob-body" style="color:#aaa;text-align:center;margin-top:12px;font-size:15px;line-height:1.6">Send money home and your family receives it instantly. No waiting, no delays, no drama.</div>
+      <div class="dots" id="ob-dots">
+        <div class="dot active"></div><div class="dot inactive"></div><div class="dot inactive"></div>
+      </div>
+    </div>
+    <div style="padding:0 28px 36px">
+      <button class="btn" id="ob-btn" onclick="obNext()">Next</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:#888">
+        Already have an account? <span style="color:#00E5A0;cursor:pointer" onclick="go('login')">Sign in</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="screen" id="screen-register">
+    <div class="topbar">
+      <button class="topbar-back" onclick="regBack()">‹</button>
+      <div class="topbar-title">Create Account</div>
+    </div>
+    <div class="progress-bar" id="reg-progress">
+      <div class="prog-seg done" id="rp0"></div>
+      <div class="prog-seg" id="rp1"></div>
+    </div>
+    <div style="flex:1;padding:0 24px">
+      <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px" id="reg-step-title">Your details</div>
+      <div style="font-size:13px;color:#888;margin-bottom:20px" id="reg-step-sub">Step 1 of 2</div>
+
+      <!-- Step 0 -->
+      <div id="reg-s0" class="gap14">
+        <div class="lbl">Email address</div>
+        <input class="inp" id="reg-email" placeholder="you@example.com" type="email"/>
+        <div class="lbl">Phone number</div>
+        <input class="inp" id="reg-phone" placeholder="+44 7700 900000" type="tel"/>
+        <div class="lbl">Password</div>
+        <input class="inp" id="reg-pass" placeholder="Min. 8 characters" type="password"/>
+      </div>
+
+      <!-- Step 1 -->
+      <div id="reg-s1" class="gap14" style="display:none;align-items:center">
+        <div style="font-size:40px;text-align:center">📱</div>
+        <div style="color:#aaa;text-align:center;font-size:14px">We sent a 6-digit OTP to<br/><b style="color:#fff" id="otp-phone-label">+44 7700 000000</b></div>
+        <input class="inp" id="reg-otp" placeholder="Enter OTP" style="text-align:center;letter-spacing:8px;font-size:22px" maxlength="6"/>
+        <span style="color:#00E5A0;font-size:13px;cursor:pointer">Resend OTP</span>
+      </div>
+    </div>
+    <div style="padding:0 24px 36px">
+      <button class="btn" onclick="regNext()">Send OTP</button>
+    </div>
+  </div>
+
+  <!-- KYC -->
+  <div class="screen" id="screen-kyc">
+    <div class="topbar">
+      <button class="topbar-back" onclick="kycBack()">‹</button>
+      <div class="topbar-title">Identity Verification</div>
+    </div>
+    <div class="progress-bar">
+      <div class="prog-seg done" id="kp0"></div>
+      <div class="prog-seg" id="kp1"></div>
+    </div>
+    <div style="flex:1;padding:0 24px;overflow-y:auto">
+      <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px" id="kyc-step-title">Personal Details</div>
+      <div style="font-size:13px;color:#888;margin-bottom:20px" id="kyc-step-sub">Verification step 1 of 2</div>
+
+      <div id="kyc-s0" class="gap14">
+        <div class="lbl">First name</div><input class="inp" id="kyc-first" placeholder="Tolu"/>
+        <div class="lbl">Last name</div><input class="inp" id="kyc-last" placeholder="Adeyemi"/>
+        <div class="lbl">Date of birth</div><input class="inp" id="kyc-dob" type="date"/>
+        <div class="lbl">Residential address</div><input class="inp" id="kyc-addr" placeholder="123 High Street, London"/>
+      </div>
+
+      <div id="kyc-s1" class="gap14" style="display:none">
+        <div class="lbl">ID Type</div>
+        <select class="sel" id="kyc-idtype">
+          <option value="passport">Passport</option>
+          <option value="drivers">Driver's License</option>
+          <option value="national">National ID</option>
+        </select>
+        <div class="lbl">ID Number</div><input class="inp" id="kyc-idnum" placeholder="Enter ID number"/>
+        <div style="background:rgba(0,229,160,0.07);border:1px dashed rgba(0,229,160,0.3);border-radius:10px;padding:14px">
+          <div style="font-size:13px;color:#00E5A0;margin-bottom:4px">Upload ID Document</div>
+          <div style="font-size:12px;color:#777">Tap to upload a photo of your ID</div>
+          <div style="margin-top:8px;height:48px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-size:22px">📎</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 24px 36px">
+      <button class="btn" onclick="kycNext()">Continue</button>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="screen" id="screen-login">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('onboarding')">‹</button>
+      <div class="topbar-title">Sign In</div>
+    </div>
+    <div style="flex:1;padding:24px 24px 0" class="gap14">
+      <div style="font-size:22px;font-weight:800;color:#fff;font-family:'Playfair Display',serif;margin-bottom:8px">Welcome back ⚡</div>
+      <div class="lbl">Email address</div><input class="inp" id="login-email" placeholder="you@example.com"/>
+      <div class="lbl">Password</div><input class="inp" id="login-pass" placeholder="Your password" type="password"/>
+      <span style="color:#00E5A0;font-size:13px;cursor:pointer;align-self:flex-end">Forgot password?</span>
+    </div>
+    <div style="padding:0 24px 36px">
+      <button class="btn" onclick="go('dashboard')">Sign In</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:#888">
+        New to Velfy? <span style="color:#00E5A0;cursor:pointer" onclick="go('register')">Create account</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="screen" id="screen-dashboard">
+    <div style="padding:16px 20px 0;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;color:#888">Good morning,</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;font-family:'Playfair Display',serif" id="dash-name">Tolu 👋</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div onclick="go('notifications')" style="position:relative;cursor:pointer;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:18px">
+          🔔<div class="notif-badge" id="dash-badge">2</div>
+        </div>
+        <div onclick="go('profile')" style="cursor:pointer;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#00E5A0,#00B377);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>
+      </div>
+    </div>
+
+    <div style="margin:16px 20px 0;background:linear-gradient(135deg,#0D2E20,#0A1E15);border:1px solid rgba(0,229,160,0.25);border-radius:18px;padding:20px">
+      <div style="font-size:12px;color:#00E5A0;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">Total Sent</div>
+      <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px" id="dash-total">₦1,018,430</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">3 successful transfers</div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <div style="flex:1;background:rgba(0,229,160,0.1);border-radius:10px;padding:10px 6px;text-align:center"><div style="color:#00E5A0;font-size:13px;font-weight:800">£2,010</div><div style="color:#888;font-size:10px">GBP/NGN</div></div>
+        <div style="flex:1;background:rgba(79,195,247,0.1);border-radius:10px;padding:10px 6px;text-align:center"><div style="color:#4FC3F7;font-size:13px;font-weight:800">$1,580</div><div style="color:#888;font-size:10px">USD/NGN</div></div>
+        <div style="flex:1;background:rgba(255,213,79,0.08);border-radius:10px;padding:10px 6px;text-align:center"><div style="color:#FFD54F;font-size:13px;font-weight:800">€1,720</div><div style="color:#888;font-size:10px">EUR/NGN</div></div>
+        <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:10px;padding:10px 6px;text-align:center"><div style="color:#fff;font-size:13px;font-weight:800">⚡</div><div style="color:#888;font-size:10px">Instant</div></div>
+      </div>
+    </div>
+
+    <div style="padding:16px 20px 0">
+      <div class="section-title">Quick Actions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div onclick="go('send')" style="background:rgba(255,255,255,0.04);border-radius:14px;padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:24px;margin-bottom:6px">💸</div><div style="color:#fff;font-weight:600;font-size:14px">Send Money</div><div style="color:#888;font-size:12px;margin-top:2px">8 currencies</div>
+        </div>
+        <div onclick="go('history')" style="background:rgba(255,255,255,0.04);border-radius:14px;padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:24px;margin-bottom:6px">📋</div><div style="color:#fff;font-weight:600;font-size:14px">History</div><div style="color:#888;font-size:12px;margin-top:2px">4 transfers</div>
+        </div>
+        <div onclick="go('beneficiary')" style="background:rgba(255,255,255,0.04);border-radius:14px;padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:24px;margin-bottom:6px">👥</div><div style="color:#fff;font-weight:600;font-size:14px">Beneficiaries</div><div style="color:#888;font-size:12px;margin-top:2px">2 saved</div>
+        </div>
+        <div onclick="go('notifications')" style="background:rgba(255,255,255,0.04);border-radius:14px;padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:24px;margin-bottom:6px">🔔</div><div style="color:#fff;font-weight:600;font-size:14px">Notifications</div><div style="color:#888;font-size:12px;margin-top:2px" id="dash-notif-sub">2 unread</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px 20px 0;flex:1;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="section-title" style="margin-bottom:0">Recent Transfers</div>
+        <span style="color:#00E5A0;font-size:12px;cursor:pointer" onclick="go('history')">See all</span>
+      </div>
+      <div id="dash-recent"></div>
+    </div>
+
+    <div style="padding:12px 20px 36px">
+      <button class="btn" onclick="go('send')">⚡ Send Money Now</button>
+    </div>
+  </div>
+
+  <!-- SEND -->
+  <div class="screen" id="screen-send">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('dashboard')">‹</button>
+      <div class="topbar-title">Send Money</div>
+    </div>
+    <div class="scroll" style="padding:0 20px" class="gap14">
+      <div class="gap14" style="padding-bottom:16px">
+        <div class="lbl">Send currency</div>
+        <div style="position:relative">
+          <div onclick="toggleCurrDropdown()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+            <span id="curr-selected-label" style="font-size:15px;color:#fff;font-weight:600">🇬🇧 GBP — British Pound</span>
+            <span id="curr-arrow" style="color:#888;font-size:12px">▼</span>
+          </div>
+          <div class="curr-dropdown" id="curr-dropdown"></div>
+        </div>
+
+        <div class="lbl">Amount to send</div>
+        <div style="position:relative">
+          <div id="send-sym" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#00E5A0;font-size:18px;font-weight:700">£</div>
+          <input id="send-amount" type="number" min="1" placeholder="0.00" oninput="updateCalc()"
+            style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 14px 14px 40px;color:#fff;font-size:22px;font-weight:700;outline:none;box-sizing:border-box;font-family:'DM Sans',sans-serif"/>
+        </div>
+
+        <div id="send-calc" style="display:none;background:linear-gradient(135deg,rgba(0,229,160,0.08),rgba(0,229,160,0.02));border:1px solid rgba(0,229,160,0.2);border-radius:12px;padding:16px">
+          <div class="row"><span class="row-label">Exchange rate</span><span class="row-val" id="calc-rate"></span></div>
+          <div class="row"><span class="row-label">Processing fee (0.8%)</span><span class="row-val" id="calc-fee"></span></div>
+          <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;display:flex;justify-content:space-between">
+            <span style="color:#00E5A0;font-weight:700">Beneficiary receives</span>
+            <span style="color:#00E5A0;font-weight:800;font-size:18px" id="calc-ngn"></span>
+          </div>
+        </div>
+
+        <div class="lbl">Funding method</div>
+        <div style="display:flex;gap:8px" id="funding-tabs">
+          <div class="fund-tab" data-v="bank" onclick="selectFund('bank')" style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;cursor:pointer;border:1px solid #00E5A0;background:rgba(0,229,160,0.1);color:#00E5A0;font-size:12px;font-weight:600;transition:all .2s">🏦 Bank</div>
+          <div class="fund-tab" data-v="debit" onclick="selectFund('debit')" style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#888;font-size:12px;font-weight:600;transition:all .2s">💳 Debit</div>
+          <div class="fund-tab" data-v="credit" onclick="selectFund('credit')" style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#888;font-size:12px;font-weight:600;transition:all .2s">🃏 Credit</div>
+        </div>
+
+        <div class="lbl">Purpose of transfer</div>
+        <select class="sel" id="send-purpose">
+          <option>Family Support</option><option>Business Payment</option><option>Education</option>
+          <option>Medical</option><option>Rent/Housing</option><option>Investment</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div style="padding:16px 20px 36px">
+      <button class="btn" id="send-next-btn" disabled onclick="go('funding')">Next: Payment Details</button>
+    </div>
+  </div>
+
+  <!-- FUNDING: BANK -->
+  <div class="screen" id="screen-funding-bank">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('send')">‹</button>
+      <div class="topbar-title">Bank Transfer</div>
+    </div>
+    <div class="scroll" style="padding:0 20px" id="funding-bank-body">
+      <div class="gap14" style="padding-bottom:16px">
+        <div style="background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.15);border-radius:12px;padding:14px">
+          <div style="font-size:12px;color:#00E5A0;margin-bottom:4px">Amount to debit</div>
+          <div style="font-size:24px;font-weight:800;color:#fff" id="fb-amount">£0</div>
+        </div>
+        <div class="lbl">Account holder name</div><input class="inp" id="fb-name" placeholder="Name on account"/>
+        <div class="lbl">Account number</div><input class="inp" id="fb-acct" placeholder="00000000" maxlength="8"/>
+        <div class="lbl">Sort code</div><input class="inp" id="fb-sort" placeholder="XX-XX-XX" maxlength="8"/>
+        <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:14px;font-size:13px;color:#888;line-height:1.7">
+          You will receive a confirmation once the debit is authorised. Funds are typically collected within minutes.
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 20px 36px">
+      <button class="btn" id="fb-btn" onclick="authoriseBank()">Authorise Debit</button>
+    </div>
+  </div>
+
+  <!-- FUNDING: CARD -->
+  <div class="screen" id="screen-funding-card">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('send')">‹</button>
+      <div class="topbar-title" id="card-screen-title">Debit Card</div>
+    </div>
+    <div class="scroll" style="padding:0 20px">
+      <div class="gap14" style="padding-bottom:16px">
+        <!-- Card preview -->
+        <div class="card-preview">
+          <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(0,229,160,0.05)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase" id="card-type-label">Debit Card</div>
+            <div style="font-size:14px;font-weight:700;color:#00E5A0" id="card-brand"></div>
+          </div>
+          <div style="font-size:18px;font-weight:700;color:#fff;margin-top:16px;letter-spacing:3px" id="card-num-preview">•••• •••• •••• ••••</div>
+          <div style="display:flex;justify-content:space-between;margin-top:14px">
+            <div style="font-size:12px;color:#aaa" id="card-name-preview">CARD HOLDER</div>
+            <div style="font-size:12px;color:#aaa" id="card-exp-preview">MM/YY</div>
+          </div>
+        </div>
+        <div style="background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.15);border-radius:12px;padding:14px">
+          <div style="font-size:12px;color:#00E5A0;margin-bottom:2px">Amount to charge</div>
+          <div style="font-size:22px;font-weight:800;color:#fff" id="fc-amount">£0</div>
+        </div>
+        <div class="lbl">Name on card</div><input class="inp" id="fc-name" placeholder="TOLU ADEYEMI" oninput="this.value=this.value.toUpperCase();document.getElementById('card-name-preview').textContent=this.value||'CARD HOLDER'"/>
+        <div class="lbl">Card number</div><input class="inp" id="fc-num" placeholder="0000 0000 0000 0000" maxlength="19" oninput="fmtCardInput(this)"/>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><div class="lbl">Expiry</div><div style="margin-top:8px"><input class="inp" id="fc-exp" placeholder="MM/YY" maxlength="5" oninput="fmtExpInput(this)"/></div></div>
+          <div style="flex:1"><div class="lbl">CVV</div><div style="margin-top:8px"><input class="inp" id="fc-cvv" placeholder="•••" maxlength="3" type="password"/></div></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.03);border-radius:10px;padding:12px">
+          <span style="font-size:16px">🔒</span>
+          <span style="font-size:12px;color:#666">Your card details are encrypted and processed securely.</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 20px 36px">
+      <button class="btn" id="fc-btn" onclick="authoriseCard()">Pay</button>
+    </div>
+  </div>
+
+  <!-- BENEFICIARY -->
+  <div class="screen" id="screen-beneficiary">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('funding')">‹</button>
+      <div class="topbar-title">Select Beneficiary</div>
+    </div>
+    <div class="scroll" style="padding:0 20px">
+      <div style="padding-bottom:16px">
+        <div class="section-title">Saved Beneficiaries</div>
+        <div id="saved-benefs"></div>
+
+        <div class="section-title" style="margin-top:16px">New Beneficiary</div>
+        <div onclick="toggleNewBenef()" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;cursor:pointer;margin-bottom:12px" id="new-benef-toggle">
+          <div style="color:#888;font-weight:600;font-size:14px" id="new-benef-toggle-label">▸ Add new beneficiary</div>
+        </div>
+        <div id="new-benef-form" class="gap14" style="display:none;margin-bottom:16px">
+          <div class="lbl">Full name</div><input class="inp" id="nb-name" placeholder="Beneficiary full name" oninput="updateBenefBtn()"/>
+          <div class="lbl">Nigerian bank</div>
+          <select class="sel" id="nb-bank">
+            <option value="">Select bank</option>
+            <option>Access Bank</option><option>GTBank</option><option>Zenith Bank</option>
+            <option>First Bank</option><option>UBA</option><option>Polaris Bank</option>
+            <option>Wema Bank</option><option>Stanbic IBTC</option>
+          </select>
+          <div class="lbl">Account number (NUBAN)</div><input class="inp" id="nb-acct" placeholder="10-digit account number" maxlength="10"/>
+          <div class="lbl">Phone number</div><input class="inp" id="nb-phone" placeholder="+234 80X XXX XXXX"/>
+          <div class="lbl">Address</div><input class="inp" id="nb-addr" placeholder="Beneficiary address in Nigeria"/>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 20px 36px">
+      <button class="btn" id="benef-next-btn" disabled onclick="go('review')">Review Transfer</button>
+    </div>
+  </div>
+
+  <!-- REVIEW -->
+  <div class="screen" id="screen-review">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('beneficiary')">‹</button>
+      <div class="topbar-title">Review and Confirm</div>
+    </div>
+    <div class="scroll" style="padding:0 20px">
+      <div style="padding-bottom:16px">
+        <div style="background:linear-gradient(135deg,#0D2B1F,#0A1A14);border:1px solid rgba(0,229,160,0.2);border-radius:16px;padding:20px;margin-bottom:16px">
+          <div class="section-title">Transfer Summary</div>
+          <div class="row"><span class="row-label">You send</span><span class="row-val" id="rv-send"></span></div>
+          <div class="row"><span class="row-label">Processing fee</span><span class="row-val" id="rv-fee"></span></div>
+          <div class="row"><span class="row-label">Exchange rate</span><span class="row-val" id="rv-rate"></span></div>
+          <div style="border-top:1px solid rgba(255,255,255,0.1);margin:10px 0"></div>
+          <div class="row"><span class="row-label">Beneficiary receives</span><span class="row-val accent" id="rv-ngn"></span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:16px;padding:20px;margin-bottom:16px">
+          <div class="section-title">Beneficiary Details</div>
+          <div class="row"><span class="row-label">Name</span><span class="row-val" id="rv-bname"></span></div>
+          <div class="row"><span class="row-label">Bank</span><span class="row-val" id="rv-bbank"></span></div>
+          <div class="row"><span class="row-label">Account</span><span class="row-val" id="rv-bacct"></span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:16px;padding:20px;margin-bottom:16px">
+          <div class="section-title">Payment Details</div>
+          <div class="row"><span class="row-label">Method</span><span class="row-val" id="rv-method"></span></div>
+          <div class="row"><span class="row-label">Purpose</span><span class="row-val" id="rv-purpose"></span></div>
+          <div class="row"><span class="row-label">Delivery</span><span class="row-val">Instant ⚡</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:16px 20px 36px">
+      <button class="btn" onclick="go('processing')" id="rv-confirm-btn">Confirm and Send</button>
+    </div>
+  </div>
+
+  <!-- PROCESSING -->
+  <div class="screen" id="screen-processing" style="align-items:center;justify-content:center;gap:24px;padding:32px">
+    <div id="proc-icon" style="font-size:64px;animation:spin 2s linear infinite">💳</div>
+    <div style="text-align:center">
+      <div style="font-size:12px;color:#aaa;margin-bottom:8px;letter-spacing:2px;text-transform:uppercase">Sending Money</div>
+      <div id="proc-label" style="font-size:17px;color:#4FC3F7;font-weight:600;transition:color .4s">Collecting payment...</div>
+    </div>
+    <div style="width:100%;max-width:280px" id="proc-stages"></div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="screen" id="screen-success">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:16px">
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(0,229,160,0.15);border:2px solid #00E5A0;display:flex;align-items:center;justify-content:center;font-size:36px">✅</div>
+      <div style="font-size:26px;font-weight:800;color:#00E5A0;font-family:'Playfair Display',serif;text-align:center">Money Delivered!</div>
+      <div style="color:#aaa;text-align:center;font-size:14px">Your beneficiary has been credited instantly</div>
+      <div style="background:rgba(255,255,255,0.05);border-radius:16px;padding:20px;width:100%;max-width:320px">
+        <div class="row"><span class="row-label">Recipient</span><span class="row-val" id="suc-recipient"></span></div>
+        <div class="row"><span class="row-label">Bank</span><span class="row-val" id="suc-bank"></span></div>
+        <div class="row"><span class="row-label">You sent</span><span class="row-val" id="suc-sent"></span></div>
+        <div class="row"><span class="row-label">Beneficiary received</span><span class="row-val accent" id="suc-ngn"></span></div>
+        <div class="row"><span class="row-label">Status</span><span class="row-val">Instant credit ⚡</span></div>
+      </div>
+    </div>
+    <div style="padding:0 24px 36px" class="gap14">
+      <button class="btn" onclick="go('dashboard')">Back to Home</button>
+      <button class="btn btn-ghost" onclick="go('send')">Send Again</button>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="screen" id="screen-history">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('dashboard')">‹</button>
+      <div class="topbar-title">Transfer History</div>
+    </div>
+    <div class="scroll" style="padding:0 20px" id="history-list"></div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="screen" id="screen-notifications">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('dashboard')">‹</button>
+      <div class="topbar-title">Notifications</div>
+    </div>
+    <div class="scroll" style="padding:0 20px" id="notif-list"></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('dashboard')">‹</button>
+      <div class="topbar-title">Profile</div>
+    </div>
+    <div class="scroll" style="padding:0 20px">
+      <div style="display:flex;flex-direction:column;align-items:center;padding:20px 0 28px">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00E5A0,#00B377);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px">👤</div>
+        <div style="color:#fff;font-size:18px;font-weight:700" id="profile-name">Tolu Adeyemi</div>
+        <div style="color:#888;font-size:13px" id="profile-email">tolu@example.com</div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <span style="background:rgba(0,229,160,0.1);color:#00E5A0;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600">✓ KYC Verified</span>
+          <span style="background:rgba(255,255,255,0.06);color:#aaa;font-size:11px;padding:3px 10px;border-radius:20px">🇬🇧 UK</span>
+        </div>
+      </div>
+      <div id="profile-menu"></div>
+      <div style="margin-top:8px;padding:16px;background:rgba(255,82,82,0.05);border-radius:12px;cursor:pointer" onclick="go('login')">
+        <div style="color:#FF5252;font-size:14px;font-weight:600">Sign Out</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIMITS -->
+  <div class="screen" id="screen-limits">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('profile')">‹</button>
+      <div class="topbar-title">Transfer Limits</div>
+    </div>
+    <div class="scroll" style="padding:0 20px">
+      <div style="background:rgba(255,255,255,0.04);border-radius:16px;padding:20px;margin-bottom:14px">
+        <div class="section-title">Your Current Tier</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#00E5A0,#00B377);display:flex;align-items:center;justify-content:center;font-size:20px">✓</div>
+          <div><div style="color:#fff;font-weight:700;font-size:16px">Verified</div><div style="color:#888;font-size:12px">KYC Level 2 approved</div></div>
+        </div>
+        <div class="row"><span class="row-label">Daily limit</span><span class="row-val">£5,000 / $6,000</span></div>
+        <div class="row"><span class="row-label">Monthly limit</span><span class="row-val">£20,000 / $24,000</span></div>
+        <div class="row"><span class="row-label">Per transaction</span><span class="row-val">£3,000 / $3,600</span></div>
+      </div>
+      <div style="background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.15);border-radius:12px;padding:14px;font-size:13px;color:#aaa;line-height:1.6">
+        Need higher limits? Complete enhanced verification to unlock Tier 3 with no monthly cap.
+      </div>
+      <div style="margin-top:14px"><button class="btn">Request Limit Increase</button></div>
+    </div>
+  </div>
+
+  <!-- SECURITY -->
+  <div class="screen" id="screen-security">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('profile')">‹</button>
+      <div class="topbar-title">Security Settings</div>
+    </div>
+    <div class="scroll" style="padding:0 20px" id="security-list"></div>
+  </div>
+
+  <!-- HELP -->
+  <div class="screen" id="screen-help">
+    <div class="topbar">
+      <button class="topbar-back" onclick="go('profile')">‹</button>
+      <div class="topbar-title">Help and Support</div>
+    </div>
+    <div class="scroll" style="padding:0 20px">
+      <div style="background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.15);border-radius:16px;padding:20px;margin-bottom:20px;text-align:center">
+        <div style="font-size:36px;margin-bottom:8px">💬</div>
+        <div style="color:#fff;font-weight:700;font-size:16px">Live Support</div>
+        <div style="color:#888;font-size:13px;margin-top:4px">Average response: under 3 minutes</div>
+        <div style="margin-top:14px"><button class="btn">Start Chat</button></div>
+      </div>
+      <div id="help-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──
+const CURRENCIES = [
+  {code:"GBP",flag:"🇬🇧",name:"British Pound",rate:2010},
+  {code:"USD",flag:"🇺🇸",name:"US Dollar",rate:1580},
+  {code:"CAD",flag:"🇨🇦",name:"Canadian Dollar",rate:1130},
+  {code:"EUR",flag:"🇪🇺",name:"Euro",rate:1720},
+  {code:"JPY",flag:"🇯🇵",name:"Japanese Yen",rate:10.5},
+  {code:"AED",flag:"🇦🇪",name:"UAE Dirham",rate:430},
+  {code:"SAR",flag:"🇸🇦",name:"Saudi Riyal",rate:421},
+  {code:"AUD",flag:"🇦🇺",name:"Aust. Dollar",rate:1020},
+];
+const BANKS=["Access Bank","GTBank","Zenith Bank","First Bank","UBA","Polaris Bank","Wema Bank","Stanbic IBTC"];
+const SAVED_BENEFICIARIES=[
+  {id:1,name:"Miriam Eze",bank:"Access Bank",account:"0123456789"},
+  {id:2,name:"Emeka Eze",bank:"GTBank",account:"9876543210"},
+];
+const MOCK_HISTORY=[
+  {id:"VP2024001",date:"2 Jun 2026",recipient:"Miriam Eze",bank:"Access Bank",amount:200,currency:"GBP",ngn:393960,status:"credited"},
+  {id:"VP2024002",date:"28 May 2026",recipient:"Emeka Eze",bank:"GTBank",amount:150,currency:"GBP",ngn:294480,status:"credited"},
+  {id:"VP2024003",date:"15 May 2026",recipient:"Miriam Eze",bank:"Access Bank",amount:300,currency:"CAD",ngn:333990,status:"credited"},
+  {id:"VP2024004",date:"1 May 2026",recipient:"Chukwuemeka Eze",bank:"Zenith Bank",amount:100,currency:"GBP",ngn:196050,status:"failed"},
+];
+const MOCK_NOTIFICATIONS=[
+  {id:1,icon:"✅",title:"Transfer Delivered",body:"393,960 sent to Miriam Eze successfully.",time:"2 Jun, 3:42pm",read:false},
+  {id:2,icon:"⚡",title:"Transfer in Progress",body:"Your transfer of £200 is on its way.",time:"2 Jun, 3:41pm",read:false},
+  {id:3,icon:"📈",title:"Rate Alert",body:"GBP/NGN improved to 2,010. Lock in now.",time:"1 Jun, 10:00am",read:true},
+  {id:4,icon:"❌",title:"Transfer Failed",body:"Transfer to Chukwuemeka Eze failed. Reversal initiated within 24hrs.",time:"1 May, 2:14pm",read:true},
+];
+
+// ── STATE ──
+let currentScreen='splash';
+let obStep=0;
+let regStep=0;
+let kycStep=0;
+let selectedCurrency='GBP';
+let fundingMethod='bank';
+let selectedBenefId=null;
+let useNew=false;
+let notifications=[...MOCK_NOTIFICATIONS];
+let history=[...MOCK_HISTORY];
+let kycFirst='Tolu',kycLast='Adeyemi';
+let regEmail='tolu@example.com';
+
+const OB_SLIDES=[
+  {icon:"⚡",title:"Instant Settlement",body:"Send money home and your family receives it instantly. No waiting, no delays, no drama."},
+  {icon:"💸",title:"Low, Transparent Fees",body:"Flat 0.8% processing fee. No hidden charges. You see exactly what your beneficiary receives before you send."},
+  {icon:"🔒",title:"Fully Regulated",body:"KYC verified, AML screened, and fully licensed. Your money moves safely."},
+];
+
+// ── HELPERS ──
+function fmt(n){return"₦"+Number(n).toLocaleString();}
+function sym(c){return({GBP:"£",USD:"$",CAD:"CA$",EUR:"€",JPY:"¥",AED:"د.إ",SAR:"﷼",AUD:"A$"})[c]||c+" ";}
+function fmtC(n,c){return sym(c)+Number(n).toLocaleString();}
+
+function go(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('screen-'+screen);
+  if(el){el.classList.add('active');currentScreen=screen;}
+  if(screen==='dashboard') renderDashboard();
+  if(screen==='history') renderHistory();
+  if(screen==='notifications') renderNotifications();
+  if(screen==='profile') renderProfile();
+  if(screen==='security') renderSecurity();
+  if(screen==='help') renderHelp();
+  if(screen==='beneficiary') renderBeneficiary();
+  if(screen==='review') renderReview();
+  if(screen==='processing') startProcessing();
+  if(screen==='success') renderSuccess();
+  if(screen==='funding') goFunding();
+}
+
+// ── SPLASH → ONBOARDING ──
+setTimeout(()=>go('onboarding'),1800);
+
+// ── ONBOARDING ──
+function obNext(){
+  if(obStep<2){
+    obStep++;
+    const s=OB_SLIDES[obStep];
+    document.getElementById('ob-icon').textContent=s.icon;
+    document.getElementById('ob-title').textContent=s.title;
+    document.getElementById('ob-body').textContent=s.body;
+    const dots=document.querySelectorAll('#ob-dots .dot');
+    dots.forEach((d,i)=>{d.className='dot '+(i===obStep?'active':'inactive');});
+    document.getElementById('ob-btn').textContent=obStep<2?'Next':'Get Started';
+    document.getElementById('ob-btn').onclick=obStep<2?obNext:()=>go('register');
+  }
+}
+
+// ── REGISTER ──
+function regBack(){regStep===0?go('onboarding'):(regStep=0,showRegStep());}
+function regNext(){
+  if(regStep===0){
+    regEmail=document.getElementById('reg-email').value||'tolu@example.com';
+    document.getElementById('otp-phone-label').textContent=document.getElementById('reg-phone').value||'+44 7700 000000';
+    regStep=1;showRegStep();
+  } else {
+    go('kyc');
+  }
+}
+function showRegStep(){
+  document.getElementById('reg-s0').style.display=regStep===0?'flex':'none';
+  document.getElementById('reg-s1').style.display=regStep===1?'flex':'none';
+  document.getElementById('rp0').className='prog-seg done';
+  document.getElementById('rp1').className='prog-seg'+(regStep===1?' done':'');
+  document.getElementById('reg-step-title').textContent=regStep===0?'Your details':'Verify your number';
+  document.getElementById('reg-step-sub').textContent='Step '+(regStep+1)+' of 2';
+  document.querySelector('#screen-register .btn').textContent=regStep===0?'Send OTP':'Verify and Continue';
+}
+
+// ── KYC ──
+function kycBack(){kycStep===0?go('register'):(kycStep=0,showKycStep());}
+function kycNext(){
+  if(kycStep===0){
+    kycFirst=document.getElementById('kyc-first').value||'Tolu';
+    kycLast=document.getElementById('kyc-last').value||'Adeyemi';
+    kycStep=1;showKycStep();
+  } else {
+    go('dashboard');
+  }
+}
+function showKycStep(){
+  document.getElementById('kyc-s0').style.display=kycStep===0?'flex':'none';
+  document.getElementById('kyc-s1').style.display=kycStep===1?'flex':'none';
+  document.getElementById('kp0').className='prog-seg done';
+  document.getElementById('kp1').className='prog-seg'+(kycStep===1?' done':'');
+  document.getElementById('kyc-step-title').textContent=kycStep===0?'Personal Details':'Government ID';
+  document.getElementById('kyc-step-sub').textContent='Verification step '+(kycStep+1)+' of 2';
+  document.querySelector('#screen-kyc .btn').textContent=kycStep===0?'Continue':'Complete Verification';
+}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  const name=kycFirst||'Tolu';
+  document.getElementById('dash-name').textContent=name+' 👋';
+  const unread=notifications.filter(n=>!n.read).length;
+  const badge=document.getElementById('dash-badge');
+  badge.textContent=unread;badge.style.display=unread>0?'flex':'none';
+  document.getElementById('dash-notif-sub').textContent=unread+' unread';
+  const credited=history.filter(t=>t.status==='credited');
+  document.getElementById('dash-total').textContent=fmt(credited.reduce((a,t)=>a+t.ngn,0));
+  const recent=document.getElementById('dash-recent');
+  recent.innerHTML=history.slice(0,3).map(tx=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;
+        background:${tx.status==='credited'?'rgba(0,229,160,0.1)':'rgba(255,82,82,0.1)'}">
+        ${tx.status==='credited'?'✓':'✗'}
+      </div>
+      <div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:500">${tx.recipient}</div><div style="color:#888;font-size:12px">${tx.date}</div></div>
+      <div style="text-align:right"><div style="color:#fff;font-size:14px;font-weight:600">${fmt(tx.ngn)}</div><div style="color:#888;font-size:11px">${fmtC(tx.amount,tx.currency)}</div></div>
+    </div>`).join('');
+}
+
+// ── SEND ──
+function buildCurrDropdown(){
+  const dd=document.getElementById('curr-dropdown');
+  dd.innerHTML=CURRENCIES.map(c=>`
+    <div class="curr-item ${c.code===selectedCurrency?'selected':''}" onclick="selectCurrency('${c.code}')">
+      <span style="color:#fff;font-size:14px">${c.flag} ${c.code} <span style="color:#888;font-size:12px">${c.name}</span></span>
+      ${c.code===selectedCurrency?'<span style="color:#00E5A0">✓</span>':''}
+    </div>`).join('');
+}
+function toggleCurrDropdown(){
+  const dd=document.getElementById('curr-dropdown');
+  const open=dd.classList.toggle('open');
+  document.getElementById('curr-arrow').textContent=open?'▲':'▼';
+  if(open) buildCurrDropdown();
+}
+function selectCurrency(code){
+  selectedCurrency=code;
+  const c=CURRENCIES.find(x=>x.code===code);
+  document.getElementById('curr-selected-label').textContent=`${c.flag} ${c.code} — ${c.name}`;
+  document.getElementById('curr-dropdown').classList.remove('open');
+  document.getElementById('curr-arrow').textContent='▼';
+  document.getElementById('send-sym').textContent=sym(code);
+  updateCalc();
+}
+function selectFund(v){
+  fundingMethod=v;
+  document.querySelectorAll('.fund-tab').forEach(t=>{
+    const sel=t.dataset.v===v;
+    t.style.border=sel?'1px solid #00E5A0':'1px solid rgba(255,255,255,0.1)';
+    t.style.background=sel?'rgba(0,229,160,0.1)':'rgba(255,255,255,0.03)';
+    t.style.color=sel?'#00E5A0':'#888';
+  });
+}
+function updateCalc(){
+  const amt=parseFloat(document.getElementById('send-amount').value)||0;
+  const c=CURRENCIES.find(x=>x.code===selectedCurrency);
+  const rate=c.rate;
+  const fee=amt?Math.round(amt*0.008):0;
+  const ngn=amt?Math.round((amt-fee)*rate):0;
+  const calcBox=document.getElementById('send-calc');
+  const btn=document.getElementById('send-next-btn');
+  if(amt>0){
+    calcBox.style.display='block';
+    document.getElementById('calc-rate').textContent=`1 ${selectedCurrency} = ${fmt(rate)}`;
+    document.getElementById('calc-fee').textContent=sym(selectedCurrency)+fee;
+    document.getElementById('calc-ngn').textContent=fmt(ngn);
+    btn.disabled=false;
+  } else {
+    calcBox.style.display='none';
+    btn.disabled=true;
+  }
+}
+function goFunding(){
+  const amt=document.getElementById('send-amount').value;
+  const amtLabel=fmtC(parseFloat(amt)||0,selectedCurrency);
+  if(fundingMethod==='bank'){
+    document.getElementById('screen-funding-bank').classList.add('active');
+    document.getElementById('screen-funding-card').classList.remove('active');
+    document.getElementById('fb-amount').textContent=amtLabel;
+  } else {
+    document.getElementById('screen-funding-card').classList.add('active');
+    document.getElementById('screen-funding-bank').classList.remove('active');
+    document.getElementById('fc-amount').textContent=amtLabel;
+    document.getElementById('card-screen-title').textContent=fundingMethod==='credit'?'Credit Card':'Debit Card';
+    document.getElementById('card-type-label').textContent=fundingMethod==='credit'?'Credit Card':'Debit Card';
+    document.getElementById('fc-btn').textContent='Pay '+amtLabel;
+  }
+}
+// override go('funding') to handle sub-screens
+const _origGo=go;
+
+function authoriseBank(){
+  const n=document.getElementById('fb-name').value;
+  const a=document.getElementById('fb-acct').value;
+  const s=document.getElementById('fb-sort').value;
+  if(!n||!a||!s) return;
+  const btn=document.getElementById('fb-btn');
+  btn.textContent='Authorising...';btn.disabled=true;
+  setTimeout(()=>{
+    document.getElementById('funding-bank-body').innerHTML=`
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-top:80px">
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(0,229,160,0.12);border:2px solid #00E5A0;display:flex;align-items:center;justify-content:center;font-size:32px">🏦</div>
+        <div style="font-size:20px;font-weight:800;color:#00E5A0;text-align:center">Bank Debit Authorised</div>
+        <div style="color:#aaa;font-size:14px;text-align:center;line-height:1.6">${fmtC(parseFloat(document.getElementById('send-amount').value)||0,selectedCurrency)} will be collected from your account ending ••••${a.slice(-4)||'0000'}</div>
+      </div>`;
+    btn.textContent='Continue to Confirm';btn.disabled=false;
+    btn.onclick=()=>go('beneficiary');
+  },1800);
+}
+function fmtCardInput(inp){
+  const v=inp.value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim();
+  inp.value=v;
+  const brand=v.startsWith('4')?'VISA':v.startsWith('5')?'Mastercard':'';
+  document.getElementById('card-brand').textContent=brand;
+  document.getElementById('card-num-preview').textContent=v||'•••• •••• •••• ••••';
+}
+function fmtExpInput(inp){
+  const d=inp.value.replace(/\D/g,'').slice(0,4);
+  inp.value=d.length>2?d.slice(0,2)+'/'+d.slice(2):d;
+  document.getElementById('card-exp-preview').textContent=inp.value||'MM/YY';
+}
+function authoriseCard(){
+  const btn=document.getElementById('fc-btn');
+  btn.textContent='Processing...';btn.disabled=true;
+  setTimeout(()=>{
+    btn.textContent='Continue to Confirm';btn.disabled=false;
+    btn.onclick=()=>go('beneficiary');
+  },2000);
+}
+
+// ── BENEFICIARY ──
+function renderBeneficiary(){
+  const container=document.getElementById('saved-benefs');
+  container.innerHTML=SAVED_BENEFICIARIES.map(b=>`
+    <div onclick="selectBenef(${b.id})" id="benef-${b.id}"
+      style="background:${selectedBenefId===b.id&&!useNew?'rgba(0,229,160,0.1)':'rgba(255,255,255,0.04)'};
+      border:1px solid ${selectedBenefId===b.id&&!useNew?'#00E5A0':'rgba(255,255,255,0.08)'};
+      border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s">
+      <div style="width:40px;height:40px;border-radius:50%;background:#1E2A3A;display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>
+      <div style="flex:1"><div style="color:#fff;font-weight:600;font-size:15px">${b.name}</div><div style="color:#888;font-size:12px">${b.bank} • ••••${b.account.slice(-4)}</div></div>
+      ${selectedBenefId===b.id&&!useNew?'<span style="color:#00E5A0;font-size:18px">✓</span>':''}
+    </div>`).join('');
+  updateBenefBtn();
+}
+function selectBenef(id){
+  selectedBenefId=id;useNew=false;
+  renderBeneficiary();
+}
+function toggleNewBenef(){
+  useNew=!useNew;
+  selectedBenefId=null;
+  document.getElementById('new-benef-form').style.display=useNew?'flex':'none';
+  document.getElementById('new-benef-toggle').style.background=useNew?'rgba(0,229,160,0.05)':'rgba(255,255,255,0.03)';
+  document.getElementById('new-benef-toggle').style.border=useNew?'1px solid #00E5A0':'1px solid rgba(255,255,255,0.08)';
+  document.getElementById('new-benef-toggle-label').style.color=useNew?'#00E5A0':'#888';
+  document.getElementById('new-benef-toggle-label').textContent=(useNew?'▾':'▸')+' Add new beneficiary';
+  renderBeneficiary();
+}
+function updateBenefBtn(){
+  const btn=document.getElementById('benef-next-btn');
+  const valid=(!useNew&&selectedBenefId)||(useNew&&document.getElementById('nb-name').value);
+  btn.disabled=!valid;
+}
+
+// ── REVIEW ──
+function renderReview(){
+  const amt=parseFloat(document.getElementById('send-amount').value)||0;
+  const c=CURRENCIES.find(x=>x.code===selectedCurrency);
+  const rate=c.rate;
+  const fee=Math.round(amt*0.008);
+  const ngn=Math.round((amt-fee)*rate);
+  document.getElementById('rv-send').textContent=fmtC(amt,selectedCurrency);
+  document.getElementById('rv-fee').textContent=sym(selectedCurrency)+fee;
+  document.getElementById('rv-rate').textContent=`1 ${selectedCurrency} = ${fmt(rate)}`;
+  document.getElementById('rv-ngn').textContent=fmt(ngn);
+  let benef=null;
+  if(useNew){
+    benef={name:document.getElementById('nb-name').value,bank:document.getElementById('nb-bank').value,account:document.getElementById('nb-acct').value};
+  } else {
+    benef=SAVED_BENEFICIARIES.find(b=>b.id===selectedBenefId);
+  }
+  document.getElementById('rv-bname').textContent=benef?.name||'—';
+  document.getElementById('rv-bbank').textContent=benef?.bank||'—';
+  document.getElementById('rv-bacct').textContent=benef?.account?'••••'+benef.account.slice(-4):'—';
+  document.getElementById('rv-method').textContent=fundingMethod==='bank'?'🏦 Bank Transfer':fundingMethod==='debit'?'💳 Debit Card':'🃏 Credit Card';
+  document.getElementById('rv-purpose').textContent=document.getElementById('send-purpose').value;
+  document.getElementById('rv-confirm-btn').textContent=`Confirm and Send ${fmtC(amt,selectedCurrency)}`;
+}
+
+// ── PROCESSING ──
+const STAGES=[
+  {icon:"💳",label:"Collecting payment...",color:"#4FC3F7"},
+  {icon:"⚡",label:"Routing to Nigeria...",color:"#FFD54F"},
+  {icon:"🏦",label:"Crediting beneficiary...",color:"#CE93D8"},
+  {icon:"✅",label:"Delivered!",color:"#00E5A0"},
+];
+let procTimer=null;
+function startProcessing(){
+  let stage=0;
+  document.getElementById('proc-icon').textContent=STAGES[0].icon;
+  document.getElementById('proc-label').textContent=STAGES[0].label;
+  document.getElementById('proc-label').style.color=STAGES[0].color;
+  renderProcStages(stage);
+  if(procTimer) clearInterval(procTimer);
+  procTimer=setInterval(()=>{
+    stage++;
+    if(stage>=STAGES.length){clearInterval(procTimer);setTimeout(()=>go('success'),800);return;}
+    document.getElementById('proc-icon').textContent=STAGES[stage].icon;
+    document.getElementById('proc-label').textContent=STAGES[stage].label;
+    document.getElementById('proc-label').style.color=STAGES[stage].color;
+    renderProcStages(stage);
+  },1100);
+}
+function renderProcStages(current){
+  document.getElementById('proc-stages').innerHTML=STAGES.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;opacity:${i<=current?1:0.3};transition:opacity .4s">
+      <div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;
+        background:${i<current?'#00E5A0':i===current?s.color:'rgba(255,255,255,0.1)'}">${i<current?'✓':i+1}</div>
+      <span style="font-size:13px;color:${i<=current?'#fff':'#555'}">${s.label}</span>
+    </div>`).join('');
+}
+
+// ── SUCCESS ──
+function renderSuccess(){
+  const amt=parseFloat(document.getElementById('send-amount').value)||200;
+  const c=CURRENCIES.find(x=>x.code===selectedCurrency);
+  const rate=c.rate;
+  const fee=Math.round(amt*0.008);
+  const ngn=Math.round((amt-fee)*rate);
+  let benef=null;
+  if(useNew) benef={name:document.getElementById('nb-name').value,bank:document.getElementById('nb-bank').value};
+  else benef=SAVED_BENEFICIARIES.find(b=>b.id===selectedBenefId)||{name:'Miriam Eze',bank:'Access Bank'};
+  document.getElementById('suc-recipient').textContent=benef?.name||'Miriam Eze';
+  document.getElementById('suc-bank').textContent=benef?.bank||'Access Bank';
+  document.getElementById('suc-sent').textContent=fmtC(amt,selectedCurrency);
+  document.getElementById('suc-ngn').textContent=fmt(ngn||393960);
+}
+
+// ── HISTORY ──
+function renderHistory(){
+  document.getElementById('history-list').innerHTML=history.map(tx=>`
+    <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <div><div style="color:#fff;font-weight:600;font-size:15px">${tx.recipient}</div><div style="color:#888;font-size:12px">${tx.bank} • ${tx.date}</div></div>
+        <div style="text-align:right"><div style="color:#fff;font-weight:700">${fmtC(tx.amount,tx.currency)}</div><div style="color:#00E5A0;font-size:12px">${fmt(tx.ngn)}</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:#555">${tx.id}</span>
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;
+          background:${tx.status==='credited'?'rgba(0,229,160,0.1)':'rgba(255,82,82,0.1)'};
+          color:${tx.status==='credited'?'#00E5A0':'#FF5252'}">
+          ${tx.status==='credited'?'✓ Credited':'✗ Failed'}
+        </span>
+      </div>
+    </div>`).join('');
+}
+
+// ── NOTIFICATIONS ──
+function renderNotifications(){
+  document.getElementById('notif-list').innerHTML=notifications.map(n=>`
+    <div onclick="markRead(${n.id})"
+      style="background:${n.read?'rgba(255,255,255,0.03)':'rgba(0,229,160,0.06)'};
+      border:1px solid ${n.read?'rgba(255,255,255,0.06)':'rgba(0,229,160,0.15)'};
+      border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer">
+      <div style="display:flex;gap:12px">
+        <span style="font-size:22px">${n.icon}</span>
+        <div style="flex:1">
+          <div style="color:${n.read?'#aaa':'#fff'};font-weight:600;font-size:14px">${n.title}</div>
+          <div style="color:#888;font-size:13px;margin-top:2px">${n.body}</div>
+          <div style="color:#555;font-size:11px;margin-top:6px">${n.time}</div>
+        </div>
+        ${!n.read?'<div style="width:8px;height:8px;border-radius:50%;background:#00E5A0;margin-top:4px;flex-shrink:0"></div>':''}
+      </div>
+    </div>`).join('');
+}
+function markRead(id){
+  notifications=notifications.map(n=>n.id===id?{...n,read:true}:n);
+  renderNotifications();
+}
+
+// ── PROFILE ──
+function renderProfile(){
+  document.getElementById('profile-name').textContent=(kycFirst||'Tolu')+' '+(kycLast||'Adeyemi');
+  document.getElementById('profile-email').textContent=regEmail||'tolu@example.com';
+  const unread=notifications.filter(n=>!n.read).length;
+  document.getElementById('profile-menu').innerHTML=[
+    {label:"Saved Beneficiaries",icon:"👥",sub:"2 saved",action:"beneficiary"},
+    {label:"Transfer Limits",icon:"📊",sub:"Tier 2 verified",action:"limits"},
+    {label:"Security Settings",icon:"🔒",sub:"2FA enabled",action:"security"},
+    {label:"Notification Preferences",icon:"🔔",sub:unread+" unread",action:"notifications"},
+    {label:"Help and Support",icon:"💬",sub:"Live chat available",action:"help"},
+  ].map(item=>`
+    <div onclick="go('${item.action}')"
+      style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,0.04);border-radius:12px;margin-bottom:8px;cursor:pointer">
+      <span style="font-size:20px">${item.icon}</span>
+      <div style="flex:1"><div style="color:#ddd;font-size:14px;font-weight:500">${item.label}</div><div style="color:#666;font-size:12px;margin-top:2px">${item.sub}</div></div>
+      <span style="color:#555;font-size:16px">›</span>
+    </div>`).join('');
+}
+
+// ── SECURITY ──
+function renderSecurity(){
+  document.getElementById('security-list').innerHTML=[
+    {label:"Change Password",icon:"🔑",sub:"Last changed 30 days ago"},
+    {label:"Two-Factor Authentication",icon:"🛡️",sub:"Enabled via SMS"},
+    {label:"Biometric Login",icon:"👆",sub:"Face ID / Fingerprint"},
+    {label:"Active Sessions",icon:"📱",sub:"1 device logged in"},
+    {label:"Login History",icon:"📋",sub:"View recent sign-ins"},
+  ].map(item=>`
+    <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,0.04);border-radius:12px;margin-bottom:8px;cursor:pointer">
+      <span style="font-size:22px">${item.icon}</span>
+      <div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:500">${item.label}</div><div style="color:#666;font-size:12px;margin-top:2px">${item.sub}</div></div>
+      <span style="color:#555">›</span>
+    </div>`).join('');
+}
+
+// ── HELP ──
+function renderHelp(){
+  document.getElementById('help-list').innerHTML=[
+    {icon:"📧",label:"Email Support",sub:"support@velfy.com"},
+    {icon:"❓",label:"FAQs",sub:"Answers to common questions"},
+    {icon:"📖",label:"How Velfy Works",sub:"Rates, limits and delivery times"},
+    {icon:"⚠️",label:"Report a Problem",sub:"Flag a failed or delayed transfer"},
+  ].map(item=>`
+    <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,0.04);border-radius:12px;margin-bottom:8px;cursor:pointer">
+      <span style="font-size:22px">${item.icon}</span>
+      <div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:500">${item.label}</div><div style="color:#666;font-size:12px;margin-top:2px">${item.sub}</div></div>
+      <span style="color:#555">›</span>
+    </div>`).join('');
+}
+
+// ── CLOSE DROPDOWN ON OUTSIDE CLICK ──
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#curr-dropdown')&&!e.target.closest('[onclick="toggleCurrDropdown()"]')){
+    document.getElementById('curr-dropdown').classList.remove('open');
+    document.getElementById('curr-arrow').textContent='▼';
+  }
+});
+</script>
+</body>
+</html>
